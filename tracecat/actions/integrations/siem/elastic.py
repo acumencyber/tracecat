@@ -50,9 +50,9 @@ Expression:
 
 
 @registry.register(
-    default_title="Acumen - List Elastic Security alerts",
+    default_title="List Elastic Security alerts",
     description="Fetch all alerts from Elastic Security and filter by time range.",
-    display_group="Acumen - Elastic",
+    display_group="Elastic",
     namespace="integrations.elastic",
     secrets=[elastic_secret],
 )
