@@ -26,35 +26,35 @@ import httpx
 
 from tracecat.registry import Field, RegistrySecret, registry
 
-acumen_elastic_secret = RegistrySecret(
-    name="acumen-elastic",
-    keys=["ACUMEN_ELASTIC_API_KEY", "ACUMEN_ELASTIC_API_URL"],
+elastic_secret = RegistrySecret(
+    name="elastic",
+    keys=["ELASTIC_API_KEY", "ELASTIC_API_URL"],
 )
 """Elastic secret.
 
 Secret
 ------
-- name: `acumen-elastic`
+- name: `elastic`
 - keys:
-    - `ACUMEN_ELASTIC_API_KEY`
-    - `ACUMEN_ELASTIC_API_URL`
+    - `ELASTIC_API_KEY`
+    - `ELASTIC_API_URL`
 
 Example Usage
 -------------
 Environment variable:
->>> os.environ["ACUMEN_ELASTIC_API_KEY"]
+>>> os.environ["ELASTIC_API_KEY"]
 
 Expression:
->>> ${{ SECRETS.acumen-elastic.ACUMEN_ELASTIC_API_KEY }}
+>>> ${{ SECRETS.elastic.ELASTIC_API_KEY }}
 """
 
 
 @registry.register(
-    default_title="CHANGED - Acumen - List Elastic Security alerts",
+    default_title="Acumen - List Elastic Security alerts",
     description="Fetch all alerts from Elastic Security and filter by time range.",
-    display_group="Acumen - Elastic",
+    display_group="Elastic",
     namespace="integrations.elastic",
-    secrets=[acumen_elastic_secret],
+    secrets=[elastic_secret],
 )
 async def acumen_list_elastic_alerts(
     start_time: Annotated[
@@ -69,8 +69,8 @@ async def acumen_list_elastic_alerts(
         int, Field(default=100, description="Maximum number of alerts to return.")
     ] = 100,
 ) -> list[dict[str, Any]]:
-    api_key = os.getenv("ACUMEN_ELASTIC_API_KEY")
-    api_url = os.getenv("ACUMEN_ELASTIC_API_URL")
+    api_key = os.getenv("ELASTIC_API_KEY")
+    api_url = os.getenv("ELASTIC_API_URL")
 
     url = f"{api_url}/api/detection_engine/signals/search"
     headers = {
