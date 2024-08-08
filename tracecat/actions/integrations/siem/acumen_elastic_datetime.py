@@ -63,7 +63,7 @@ async def acumen_list_elastic_alerts_datetime(
 ) -> list[dict[str, Any]]:
     # Calculate start_time and end_time
     end_time = datetime.now()
-    start_time = end_time - timedelta(hours=1)
+    start_time = end_time - timedelta(minutes=5)
 
     api_key = os.getenv("ELASTIC_API_KEY")
     api_url = os.getenv("ELASTIC_API_URL")
