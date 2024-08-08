@@ -18,7 +18,7 @@ export function WorkflowsDashboard() {
           <div className="items-start space-y-3 text-left">
             <h2 className="text-2xl font-bold tracking-tight">Workflows</h2>
             <p className="text-md text-muted-foreground">
-              Your workflows dashboard.
+              ACUMEN - Your workflows dashboard
             </p>
           </div>
           <div className="ml-auto flex items-center space-x-2">

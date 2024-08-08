@@ -26,37 +26,37 @@ import httpx
 
 from tracecat.registry import Field, RegistrySecret, registry
 
-elastic_secret = RegistrySecret(
-    name="elastic",
-    keys=["ELASTIC_API_KEY", "ELASTIC_API_URL"],
+acumen_elastic_secret = RegistrySecret(
+    name="acumen-elastic",
+    keys=["ACUMEN_ELASTIC_API_KEY", "ACUMEN_ELASTIC_API_URL"],
 )
 """Elastic secret.
 
 Secret
 ------
-- name: `elastic`
+- name: `acumen-elastic`
 - keys:
-    - `ELASTIC_API_KEY`
-    - `ELASTIC_API_URL`
+    - `ACUMEN_ELASTIC_API_KEY`
+    - `ACUMEN_ELASTIC_API_URL`
 
 Example Usage
 -------------
 Environment variable:
->>> os.environ["ELASTIC_API_KEY"]
+>>> os.environ["ACUMEN_ELASTIC_API_KEY"]
 
 Expression:
->>> ${{ SECRETS.elastic.ELASTIC_API_KEY }}
+>>> ${{ SECRETS.acumen-elastic.ACUMEN_ELASTIC_API_KEY }}
 """
 
 
 @registry.register(
-    default_title="Acumen - List Elastic Security alerts",
+    default_title="CHANGED - Acumen - List Elastic Security alerts",
     description="Fetch all alerts from Elastic Security and filter by time range.",
     display_group="Acumen - Elastic",
     namespace="integrations.elastic",
-    secrets=[elastic_secret],
+    secrets=[acumen_elastic_secret],
 )
-async def list_elastic_alerts(
+async def acumen_list_elastic_alerts(
     start_time: Annotated[
         datetime,
         Field(..., description="Start time, return alerts created after this time."),
@@ -66,11 +66,11 @@ async def list_elastic_alerts(
         Field(..., description="End time, return alerts created before this time."),
     ],
     limit: Annotated[
-        int, Field(default=1000, description="Maximum number of alerts to return.")
-    ] = 1000,
+        int, Field(default=100, description="Maximum number of alerts to return.")
+    ] = 100,
 ) -> list[dict[str, Any]]:
-    api_key = os.getenv("ELASTIC_API_KEY")
-    api_url = os.getenv("ELASTIC_API_URL")
+    api_key = os.getenv("ACUMEN_ELASTIC_API_KEY")
+    api_url = os.getenv("ACUMEN_ELASTIC_API_URL")
 
     url = f"{api_url}/api/detection_engine/signals/search"
     headers = {
