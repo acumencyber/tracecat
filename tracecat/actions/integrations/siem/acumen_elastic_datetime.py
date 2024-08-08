@@ -19,7 +19,7 @@ list_alerts = {
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Any
 
 import httpx
@@ -50,25 +50,21 @@ Expression:
 
 
 @registry.register(
-    default_title="Acumen - List Elastic Security alerts",
+    default_title="Acumen - List Elastic Security alerts - DateTime",
     description="Fetch all alerts from Elastic Security and filter by time range.",
     display_group="Elastic",
     namespace="integrations.elastic",
     secrets=[elastic_secret],
 )
-async def acumen_list_elastic_alerts(
-    start_time: Annotated[
-        datetime,
-        Field(..., description="Start time, return alerts created after this time."),
-    ],
-    end_time: Annotated[
-        datetime,
-        Field(..., description="End time, return alerts created before this time."),
-    ],
+async def acumen_list_elastic_alerts_datetime(
     limit: Annotated[
         int, Field(default=100, description="Maximum number of alerts to return.")
     ] = 100,
 ) -> list[dict[str, Any]]:
+    # Calculate start_time and end_time
+    end_time = datetime.now()
+    start_time = end_time - timedelta(hours=1)
+
     api_key = os.getenv("ELASTIC_API_KEY")
     api_url = os.getenv("ELASTIC_API_URL")
 
@@ -79,31 +75,31 @@ async def acumen_list_elastic_alerts(
         "kbn-xsrf": "kibana",
     }
     query = {
-    "size": limit,
-    "query": {
-        "bool": {
-            "filter": [
-                {
-                    "range": {
-                        "@timestamp": {
-                            "gte": start_time.isoformat(),
-                            "lte": end_time.isoformat(),
+        "size": limit,
+        "query": {
+            "bool": {
+                "filter": [
+                    {
+                        "range": {
+                            "@timestamp": {
+                                "gte": start_time.isoformat(),
+                                "lte": end_time.isoformat(),
+                            }
+                        }
+                    },
+                    {"match": {"signal.status": "open"}}
+                ],
+                "must_not": [
+                    {
+                        "exists": {
+                            "field": "kibana.alert.building_block_type"
                         }
                     }
-                },
-                {"match": {"signal.status": "open"}}
-            ],
-            "must_not": [
-                {
-                    "exists": {
-                        "field": "kibana.alert.building_block_type"
-                    }
-                }
-            ]
+                ]
 
+            }
         }
     }
-}
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.post(url, headers=headers, json=query)
