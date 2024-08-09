@@ -51,7 +51,7 @@ Expression:
 
 @registry.register(
     default_title="Acumen - List Elastic Security alerts",
-    description="Fetch all alerts from Elastic Security and filter by time range.",
+    description="Fetch all alerts from Elastic Security and filter by time range, excluding Building Block rules.",
     display_group="Elastic",
     namespace="integrations.elastic",
     secrets=[elastic_secret],
