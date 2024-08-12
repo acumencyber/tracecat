@@ -82,18 +82,7 @@ services:
     entrypoint: ["python", "tracecat/dsl/worker.py"]
 
   ui:
-<<<<<<< HEAD
     image: ghcr.io/tracecathq/tracecat-ui:${TRACECAT__IMAGE_TAG:-0.6.4}
-=======
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-        NEXT_SERVER_API_URL: ${NEXT_SERVER_API_URL}
-        NODE_ENV: ${NODE_ENV}
->>>>>>> d0231e6355d8b8e7fc4c43852c9bc86450e42b8e
     container_name: ui
     restart: unless-stopped
     ports:

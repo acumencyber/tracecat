@@ -1,3 +1,6 @@
+# Acumen exclusions
+docker-compose.dev.yml
+
 # Terraform-related files
 *.tfstate
 *.tfstate.backup
