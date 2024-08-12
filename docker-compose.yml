@@ -3,6 +3,8 @@ services:
     image: caddy:2.8.4-alpine
     container_name: caddy
     restart: unless-stopped
+    networks:
+      - core
     ports:
       - 80:80
     environment:
@@ -15,39 +17,46 @@ services:
     image: ghcr.io/tracecathq/tracecat:${TRACECAT__IMAGE_TAG:-0.6.4}
     container_name: api
     restart: unless-stopped
-    ports:
-      - 8000:8000
+    networks:
+      - core
+      - core-db
+      - temporal
     environment:
       LOG_LEVEL: ${LOG_LEVEL}
       TRACECAT__API_URL: ${TRACECAT__API_URL}
       TRACECAT__API_ROOT_PATH: ${TRACECAT__API_ROOT_PATH}
       TRACECAT__APP_ENV: ${TRACECAT__APP_ENV}
       TRACECAT__DB_ENCRYPTION_KEY: ${TRACECAT__DB_ENCRYPTION_KEY} # Sensitive
+      TRACECAT__DB_SSLMODE: ${TRACECAT__DB_SSLMODE}
       TRACECAT__DB_URI: ${TRACECAT__DB_URI} # Sensitive
-      TRACECAT__DISABLE_AUTH: ${TRACECAT__DISABLE_AUTH}
       TRACECAT__PUBLIC_RUNNER_URL: ${TRACECAT__PUBLIC_RUNNER_URL}
+      TRACECAT__PUBLIC_APP_URL: ${TRACECAT__PUBLIC_APP_URL}
       TRACECAT__SERVICE_KEY: ${TRACECAT__SERVICE_KEY} # Sensitive
       TRACECAT__SIGNING_SECRET: ${TRACECAT__SIGNING_SECRET} # Sensitive
       TRACECAT__ALLOW_ORIGINS: ${TRACECAT__ALLOW_ORIGINS}
-      # Clerk auth
-      CLERK_FRONTEND_API_URL: ${CLERK_FRONTEND_API_URL} # Sensitive
+      TRACECAT__AUTH_TYPES: ${TRACECAT__AUTH_TYPES}
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+      USER_AUTH_SECRET: ${USER_AUTH_SECRET}
       # Temporal
       TEMPORAL__CLUSTER_URL: ${TEMPORAL__CLUSTER_URL}
       TEMPORAL__CLUSTER_QUEUE: ${TEMPORAL__CLUSTER_QUEUE}
-    volumes:
-      - core-app:/var/lib/tracecat
 
   worker:
     image: ghcr.io/tracecathq/tracecat:${TRACECAT__IMAGE_TAG:-0.6.4}
     restart: unless-stopped
+    networks:
+      - core
+      - core-db
+      - temporal
     environment:
       LOG_LEVEL: ${LOG_LEVEL}
       TRACECAT__API_URL: ${TRACECAT__API_URL}
       TRACECAT__API_ROOT_PATH: ${TRACECAT__API_ROOT_PATH}
       TRACECAT__APP_ENV: ${TRACECAT__APP_ENV}
       TRACECAT__DB_ENCRYPTION_KEY: ${TRACECAT__DB_ENCRYPTION_KEY} # Sensitive
+      TRACECAT__DB_SSLMODE: ${TRACECAT__DB_SSLMODE}
       TRACECAT__DB_URI: ${TRACECAT__DB_URI} # Sensitive
-      TRACECAT__DISABLE_AUTH: ${TRACECAT__DISABLE_AUTH}
       TRACECAT__PUBLIC_RUNNER_URL: ${TRACECAT__PUBLIC_RUNNER_URL}
       TRACECAT__SERVICE_KEY: ${TRACECAT__SERVICE_KEY} # Sensitive
       TRACECAT__SIGNING_SECRET: ${TRACECAT__SIGNING_SECRET} # Sensitive
@@ -57,29 +66,31 @@ services:
       # SMTP
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
-      SMTP_TLS: ${SMTP_TLS}
-      SMTP_AUTH: ${SMTP_AUTH}
+      SMTP_STARTTLS_ENABLED: ${SMTP_STARTTLS_ENABLED}
+      SMTP_SSL_ENABLED: ${SMTP_SSL_ENABLED}
+      SMTP_IGNORE_CERT_ERRORS: ${SMTP_IGNORE_CERT_ERRORS}
+      SMTP_AUTH_ENABLED: ${SMTP_AUTH_ENABLED}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-    volumes:
-      - core-app:/var/lib/tracecat
+      # LDAP
+      LDAP_HOST: ${LDAP_HOST}
+      LDAP_PORT: ${LDAP_PORT}
+      LDAP_SSL: ${LDAP_SSL}
+      LDAP_TYPE: ${LDAP_TYPE}
+
     command: ["python", "tracecat/dsl/worker.py"]
 
   ui:
     image: ghcr.io/tracecathq/tracecat-ui:${TRACECAT__IMAGE_TAG:-0.6.4}
     container_name: ui
     restart: unless-stopped
-    ports:
-      - 3000:3000
+    networks:
+      - core
     environment:
-      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY} # Sensitive
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
-      NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
-      NEXT_PUBLIC_DISABLE_AUTH: ${TRACECAT__DISABLE_AUTH}
+      NEXT_PUBLIC_AUTH_TYPES: ${TRACECAT__AUTH_TYPES}
       NEXT_SERVER_API_URL: ${NEXT_SERVER_API_URL}
       NODE_ENV: ${NODE_ENV}
     depends_on:
@@ -89,8 +100,8 @@ services:
     image: postgres:16
     container_name: postgres_db
     restart: always
-    ports:
-      - 5432:5432
+    networks:
+      - core-db
     shm_size: 128mb
     environment:
       POSTGRES_USER: ${TRACECAT__POSTGRES_USER}
@@ -102,6 +113,8 @@ services:
     image: postgres:13
     container_name: temporal_postgres_db
     restart: always
+    networks:
+      - temporal-db
     environment:
       POSTGRES_USER: ${TEMPORAL__POSTGRES_USER}
       POSTGRES_PASSWORD: ${TEMPORAL__POSTGRES_PASSWORD}
@@ -112,8 +125,9 @@ services:
     image: temporalio/auto-setup:${TEMPORAL__VERSION}
     container_name: temporal
     restart: always
-    ports:
-      - 7233:7233
+    networks:
+      - temporal
+      - temporal-db
     environment:
       - DB=postgres12
       - DB_PORT=5432
@@ -124,18 +138,14 @@ services:
     depends_on:
       - temporal_postgres_db
 
-  temporal_ui:
-    image: temporalio/ui:${TEMPORAL__UI_VERSION}
-    container_name: temporal_ui
-    ports:
-      - 8080:8080
-    environment:
-      - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
-    depends_on:
-      - temporal
-
 volumes:
-  core-app:
   core-db:
   temporal-db:
+
+networks:
+  core:
+  core-db:
+    internal: true
+  temporal:
+  temporal-db:
+    internal: true
