@@ -143,7 +143,7 @@ services:
       - 8080:8080
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+      - TEMPORAL_CORS_ORIGINS=http://0.0.0.0:3000
     depends_on:
       - temporal
 
